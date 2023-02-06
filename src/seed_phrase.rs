@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt::Error, fs::read_to_string};
 
-use crypto::{digest::Digest, ed25519, hmac::Hmac, pbkdf2::pbkdf2, sha2::Sha256, sha2::Sha512};
+use crypto::{digest::Digest, hmac::Hmac, pbkdf2::pbkdf2, 
+    sha2::Sha256, sha2::Sha512, curve25519::ge_scalarmult_base};
 use rand::{Rng, ThreadRng};
 
 pub struct SeedPhrase {
@@ -87,7 +88,29 @@ impl SeedPhrase {
         return buffer;
     }
     //Получение пары ключей(0-Приватный 1-Публичный)
-    pub fn get_keypair(&mut self) -> ([u8; 64], [u8; 32]) {
-        return ed25519::keypair(&self.seed());
+    pub fn get_keypair(&mut self) -> ([u8; 32], [u8; 32]) {
+        let seed = self.seed();
+
+        let mut private_key: [u8; 32] = {
+            let mut hash_output: [u8; 32] = [0; 32];
+            let mut hasher = Sha256::new();
+            hasher.input(&seed);
+            hasher.result(&mut hash_output);
+            hash_output[0] &= 248;
+            hash_output[31] &= 63;
+            hash_output[31] |= 64;
+            hash_output
+        };
+    
+        let scalar_base = ge_scalarmult_base(&private_key);
+        let public_key = scalar_base.to_bytes();
+        for (dest, src) in (&mut private_key).iter_mut().zip(public_key.iter()) {
+            *dest = *src;
+        }
+        for (dest, src) in (&mut private_key).iter_mut().zip(seed.iter()) {
+            *dest = *src;
+        }
+
+        return (private_key, public_key);
     }
 }
