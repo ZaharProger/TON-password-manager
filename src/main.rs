@@ -1,6 +1,12 @@
+use std::{fs::File, io::Write};
+
 pub mod seed_phrase;
 
 fn main() {
     let mut seed_phrase = seed_phrase::SeedPhrase::new(4096).unwrap();
-    println!("{:?}", seed_phrase.get_keypair().1);
+    let (private_key, public_key) = seed_phrase.get_keypair();
+
+    let file_name = "contract.pk";
+    let mut file = File::create(file_name).unwrap();
+    file.write_all(&private_key); 
 }

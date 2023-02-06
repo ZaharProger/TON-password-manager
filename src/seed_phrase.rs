@@ -7,12 +7,12 @@ pub struct SeedPhrase {
     random: ThreadRng,
     word_map: HashMap<i32, String>,
     entropy: Vec<u8>,
-    iterations:u32,
+    iterations: u32,
 }
 
 impl SeedPhrase {
     //Создает экземпляр класса
-    pub fn new(itt:u32) -> Result<SeedPhrase, Error> {
+    pub fn new(itt: u32) -> Result<SeedPhrase, Error> {
         let word_string = read_to_string("bibs.txt").unwrap();
         let word_list: Vec<&str> = word_string.split("\r\n").collect();
         let mut word_map: HashMap<i32, String> = HashMap::new();
@@ -32,7 +32,9 @@ impl SeedPhrase {
     }
     //Возвращает окончательную энтропию
     fn create_entropy(&mut self) {
-        self.entropy = (0..256).map(|_| self.random.gen_range(0, 2)).collect();
+        self.entropy = (0..256)
+            .map(|_| self.random.gen_range(0, 2))
+            .collect();
 
         let mut sha256 = Sha256::new();
         let mut buffer: Vec<u8> = vec![0; 32];
@@ -71,13 +73,17 @@ impl SeedPhrase {
     //Сид фраза
     fn seed(&mut self) -> Vec<u8> {
         let mut buffer: Vec<u8> = vec![0; 32];
-        let salt: Vec<u8> = (0..128).map(|_| self.random.gen_range(0, 2)).collect();
+        let salt: Vec<u8> = (0..128)
+            .map(|_| self.random.gen_range(0, 2))
+            .collect();
+            
         pbkdf2(
             &mut Hmac::new(Sha512::new(), &self.entropy),
             &salt,
             self.iterations,
             &mut buffer,
         );
+
         return buffer;
     }
     //Получение пары ключей(0-Приватный 1-Публичный)
