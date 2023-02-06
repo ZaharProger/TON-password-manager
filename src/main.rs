@@ -1,7 +1,8 @@
 use std::{fs::read_to_string, collections::HashMap};
 
 use rand::Rng;
-use crypto::{sha2::Sha256, sha2::Sha512, hmac::Hmac, digest::Digest, pbkdf2::pbkdf2};
+use crypto::{sha2::Sha256, sha2::Sha512, 
+    hmac::Hmac, digest::Digest, pbkdf2::pbkdf2, ed25519};
 
 fn main() {
     //Инициализируем генератор рандома
@@ -72,16 +73,10 @@ fn main() {
         &mut buffer
     );
 
-    let mut seed: Vec<u8> = Vec::new();
-    let seed_binary_string: String = buffer
-        .iter()
-        .map(|byte| format!("{:08b}", byte))
-        .collect();
+    println!("Seed: {:?}", buffer);
 
-    for bit in seed_binary_string.chars() {
-        seed.push(bit.to_digit(2).unwrap() as u8);
-    }
-
-    println!("Seed: {:?}", seed);
+    //Генерируем пару ключей
+    let (private_key, public_key) = ed25519::keypair(&buffer);
+    println!("Private key: {:?}\nPublic key: {:?}", private_key, public_key);
 
 }
