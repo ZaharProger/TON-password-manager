@@ -10,7 +10,8 @@ fn main() {
 
     let file_name = "contract.pk";
     let mut file = File::create(file_name).unwrap();
-    file.write_all(&new_private_key[..32]); 
+
+    file.write_all(&new_private_key[..32]).ok(); 
 
     println!("Old private: {:?}", private_key);
     println!("Old public: {:?}", public_key);
