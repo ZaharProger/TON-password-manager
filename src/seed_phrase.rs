@@ -91,25 +91,14 @@ impl SeedPhrase {
     pub fn get_keypair(&mut self) -> ([u8; 32], [u8; 32]) {
         let seed = self.seed();
 
-        let mut private_key: [u8; 32] = {
-            let mut hash_output: [u8; 32] = [0; 32];
-            let mut hasher = Sha256::new();
-            hasher.input(&seed);
-            hasher.result(&mut hash_output);
-            hash_output[0] &= 248;
-            hash_output[31] &= 63;
-            hash_output[31] |= 64;
-            hash_output
-        };
+        let mut private_key: [u8; 32] = [0; 32];
+        let mut hasher = Sha256::new();
+
+        hasher.input(&seed);
+        hasher.result(&mut private_key);
     
         let scalar_base = ge_scalarmult_base(&private_key);
         let public_key = scalar_base.to_bytes();
-        for (dest, src) in (&mut private_key).iter_mut().zip(public_key.iter()) {
-            *dest = *src;
-        }
-        for (dest, src) in (&mut private_key).iter_mut().zip(seed.iter()) {
-            *dest = *src;
-        }
 
         return (private_key, public_key);
     }
