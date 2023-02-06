@@ -1,8 +1,8 @@
-
-mod seed_phrase;
+pub mod seed_phrase;
 
 fn main() {
-
+    let seedPhrase = seed_phrase::SeedPhrase::new().unwrap();
+    
 }
 // fn main() {
 //     //Инициализируем генератор рандома
