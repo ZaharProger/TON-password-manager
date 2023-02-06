@@ -33,32 +33,41 @@ impl SeedPhrase {
         let mut entropy: Vec<u8> = (0..256)
         .map(|_| self.random.gen_range(0, 2))
         .collect();
+
         let mut sha256 = Sha256::new();
         let mut buffer: Vec<u8> = vec![0; 32];
+
         sha256.input(&entropy);
         sha256.result(&mut buffer);
+
         let first_byte = format!("{:08b}", buffer[0]);
         for bit in first_byte.chars() {
             entropy.push(bit.to_digit(2).unwrap() as u8);
         }
+
         return entropy;
     }
     //Возвращает мнемоническую фразу
-    fn mnemonic(&self) -> Vec<&str> {
-        let mut mnemonic: Vec<&str> = Vec::new();
+    pub fn mnemonic(&mut self) -> Vec<String> {
+        let mut mnemonic: Vec<String> = Vec::new();
         let mut bunch_start = 0;
         let mut bunch_end = 11;
-        while bunch_start != &self.entropy().len() {
-            let entropy_slice: String = self.entropy()[bunch_start..bunch_end]
+
+        let entropy = self.entropy();
+
+        while bunch_start != entropy.len() {
+            let entropy_slice: String = entropy[bunch_start..bunch_end]
                 .iter()
                 .map(|entropy_digit| entropy_digit.to_string())
                 .collect();
+                
             let word_index = isize::from_str_radix(&entropy_slice, 2);
-            mnemonic.push(self.word_map[&(word_index.unwrap() as i32)].as_str());
+            mnemonic.push(self.word_map[&(word_index.unwrap() as i32)].to_string());
 
             bunch_start = bunch_end;
             bunch_end += entropy_slice.len();
         }
+
         return mnemonic
     }
 
