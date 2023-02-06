@@ -81,7 +81,7 @@ impl SeedPhrase {
         return buffer;
     }
     //Получение пары ключей(0-Приватный 1-Публичный)
-    pub fn Get_keypair(&mut self) -> ([u8; 64], [u8; 32]) {
+    pub fn get_keypair(&mut self) -> ([u8; 64], [u8; 32]) {
         return ed25519::keypair(&self.seed());
     }
 }
