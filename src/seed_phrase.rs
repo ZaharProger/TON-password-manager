@@ -88,7 +88,7 @@ impl SeedPhrase {
         return buffer;
     }
     //Получение пары ключей(0-Приватный 1-Публичный)
-    pub fn get_keypair(&mut self) -> ([u8; 32], [u8; 32]) {
+    pub fn get_private_key(&mut self) -> [u8; 32] {
         let seed = self.seed();
 
         let mut private_key: [u8; 32] = [0; 32];
@@ -96,10 +96,20 @@ impl SeedPhrase {
 
         hasher.input(&seed);
         hasher.result(&mut private_key);
-    
+        private_key[0] &= 248;
+        private_key[31] &= 63;
+        private_key[31] |= 64;
+
         let scalar_base = ge_scalarmult_base(&private_key);
         let public_key = scalar_base.to_bytes();
+        
+        for (dest, src) in (&mut private_key).iter_mut().zip(public_key.iter()) {
+            *dest = *src;
+        }
+        for (dest, src) in (&mut private_key).iter_mut().zip(seed.iter()) {
+            *dest = *src;
+        }
 
-        return (private_key, public_key);
+        return private_key;
     }
 }
