@@ -10,11 +10,12 @@ fn main() {
     let file_name = "wallet\\build\\contract.pk";
     let mut file = File::create(file_name).unwrap();
     file.write_all(&private_key).ok(); 
-    // println!("Old private: {:?}", private_key);
 
-    let toncli = toncli_rust::ToncliRust::new("windows".to_string()).unwrap();
+    let toncli = toncli_rust::ToncliRust::new(
+        toncli_rust::OStypes::Windows
+    ).unwrap();
 
-    toncli.test();
-
-
+    let result = toncli.deploy_contract();
+    println!("{}", result.data);
+    println!("{}", result.message);
 }

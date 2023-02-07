@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 rust-crypto = "0.2.36"
 rand = "0.5"
+encoding_rs = "0.8.32"
+encoding_rs_io = "0.1.7"
