@@ -2,4 +2,4 @@
 
 2 boc+>B
 
-"fift\boc\data.boc" tuck B>file
+"build\boc\data.boc" tuck B>file
