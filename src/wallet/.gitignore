@@ -1,5 +1,5 @@
 *.pk
 *.addr
 contract_address
-contract.fif
+/build/*.fif
 *.boc

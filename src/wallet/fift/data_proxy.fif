@@ -1,0 +1,5 @@
+"data.fif" include
+
+2 boc+>B
+
+"build\boc\data.boc" tuck B>file
