@@ -12,9 +12,9 @@ fn main() {
     file.write_all(&private_key).ok(); 
     // println!("Old private: {:?}", private_key);
 
-    let toncli = toncli_rust::ToncliRust::new("windows".to_string()).unwrap();
+    // let toncli = toncli_rust::ToncliRust::new("windows".to_string()).unwrap();
 
-    toncli.test();
+    // toncli.test();
 
 
 }
