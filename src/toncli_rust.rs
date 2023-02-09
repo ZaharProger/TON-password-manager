@@ -27,7 +27,7 @@ impl ToncliRust {
         let args = match request {
             RequestTypes::DeployContract => vec![
                 format!("{}lite-client --timeout 10 -C global.config.json -c 'sendfile {}'",
-                flag, self.build_path(vec![&cwd, "src", "wallet", "build", "boc", "contract.boc"]))
+                    flag, self.build_path(vec![&cwd, "src", "wallet", "build", "boc", "contract.boc"]))
             ],
             RequestTypes::GenerateContractAddress => vec![
                 format!("{}cd {}", flag, self.build_path(vec!["src", "wallet"])),
