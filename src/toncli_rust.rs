@@ -19,7 +19,7 @@ impl ToncliRust {
         let args = match request {
             RequestTypes::DeployContract => vec![
                 "/K cd wallet",
-                "func -o build\\contract.fif -SPA C:\\TON\\smartcont\\stdlib.fc func\\code.func",
+                "func -o build\\contract.fif -SPA func\\stdlib.fc func\\code.func",
                 "fift -s fift\\data_proxy.fif",
                 "fift -s fift\\manipulation.fif build\\contract.fif build\\boc\\data.boc 0 build\\boc\\contract.boc build\\contract_address",
                 // "/K lite-client -C C:\\TON\\global.config.json"
