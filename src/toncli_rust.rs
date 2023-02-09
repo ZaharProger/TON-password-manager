@@ -14,21 +14,21 @@ impl ToncliRust {
          });
     }
     //Формирование команды и её исполнение
-    fn execute_command(&self, request: RequestTypes) -> Output {
+    fn execute_command(&self, request: RequestTypes) -> std::process::Child {
         let executor = if let OStypes::Windows = self.target_os { "cmd" } else { "sh" };
         let args = match request {
             RequestTypes::DeployContract => vec![
-                "/K cd wallet",
-                "func -o build\\contract.fif -SPA func\\stdlib.fc func\\code.func",
-                "fift -s fift\\data_proxy.fif",
-                "fift -s fift\\manipulation.fif build\\contract.fif build\\boc\\data.boc 0 build\\boc\\contract.boc build\\contract_address",
-                // "/K lite-client -C C:\\TON\\global.config.json"
+                // "/K cd wallet",
+                // "func -o build\\contract.fif -SPA func\\stdlib.fc func\\code.func",
+                // "fift -s fift\\data_proxy.fif",
+                // "fift -s fift\\manipulation.fif build\\contract.fif build\\boc\\data.boc 0 build\\boc\\contract.boc build\\contract_address",
+                 "/K lite-client -C C:\\Users\\akuli\\Documents\\ton\\global.config.json"
             ]
         };
 
         return Command::new(executor)
                 .args(args.join(" && ").split(" "))
-                .output()
+                .spawn()
                 .expect(&self.command_fail_msg);
     }
     //Деплой контракта
@@ -37,8 +37,8 @@ impl ToncliRust {
         let mut file = File::create(file_name).unwrap();
         file.write_all(private_key).ok(); 
         
-        let output = self.execute_command(RequestTypes::DeployContract);
-
+        let handler = self.execute_command(RequestTypes::DeployContract);
+        let output = handler.wait_with_output().unwrap();
         return if let 0 = output.stderr.len() {
             ExecutionResult {
                 result: true,
