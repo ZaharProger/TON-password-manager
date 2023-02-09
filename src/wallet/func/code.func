@@ -66,4 +66,3 @@ int hello_world() method_id {
                         .store_ref(test_inside)
                         .end_cell());
 }
-

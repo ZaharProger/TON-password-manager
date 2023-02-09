@@ -1,6 +1,4 @@
-use std::{process::{Command, Output}, io::{Error, Read}, str::from_utf8};
-use encoding_rs::Encoding;
-use encoding_rs_io::DecodeReaderBytesBuilder;
+use std::{process::{Command, Output}, io::{Error, Write}, str::from_utf8, fs::File};
 
 pub struct ToncliRust {
     target_os: OStypes,
@@ -19,31 +17,27 @@ impl ToncliRust {
     fn execute_command(&self, request: RequestTypes) -> Output {
         let executor = if let OStypes::Windows = self.target_os { "cmd" } else { "sh" };
         let args = match request {
-            RequestTypes::DeployContract => "/K cd wallet && toncli -h"
+            RequestTypes::DeployContract => vec![
+                "/K cd wallet",
+                "func -o build\\contract.fif -SPA C:\\TON\\smartcont\\stdlib.fc func\\code.func",
+                "fift -s fift\\data_proxy.fif",
+                "fift -s fift\\manipulation.fif build\\contract.fif build\\boc\\data.boc 0 build\\boc\\contract.boc build\\contract_address",
+                // "/K lite-client -C C:\\TON\\global.config.json"
+            ]
         };
 
         return Command::new(executor)
-                .args(args.split(" "))
+                .args(args.join(" && ").split(" "))
                 .output()
                 .expect(&self.command_fail_msg);
     }
     //Деплой контракта
-    pub fn deploy_contract(&self) -> ExecutionResult {
+    pub fn deploy_contract(&self, private_key: &[u8; 32]) -> ExecutionResult {
+        let file_name = "wallet\\build\\contract.pk";
+        let mut file = File::create(file_name).unwrap();
+        file.write_all(private_key).ok(); 
+        
         let output = self.execute_command(RequestTypes::DeployContract);
-
-        //Эта штука вроде конвертит Unicode, но получается хрень конкретная
-        // let encoder = Encoding::for_label("Latin1".as_bytes());
-        // let mut decoder = DecodeReaderBytesBuilder::new()
-        //     .encoding(encoder)
-        //     .build(if let 0 = output.stderr.len() { 
-        //         &output.stdout[..]
-        //      } 
-        //      else { 
-        //         &output.stderr[..] 
-        //     }); 
-                    
-        // let mut encoded_data = String::new();
-        // decoder.read_to_string(&mut encoded_data).unwrap();
 
         return if let 0 = output.stderr.len() {
             ExecutionResult {
