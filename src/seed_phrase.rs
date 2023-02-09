@@ -14,7 +14,7 @@ pub struct SeedPhrase {
 impl SeedPhrase {
     //Создает экземпляр класса
     pub fn new(itt: u32) -> Result<SeedPhrase, Error> {
-        let word_string = read_to_string("bibs.txt").unwrap();
+        let word_string = read_to_string("src\\bibs.txt").unwrap();
         let word_list: Vec<&str> = word_string.split("\r\n").collect();
         let mut word_map: HashMap<i32, String> = HashMap::new();
 
@@ -31,6 +31,7 @@ impl SeedPhrase {
             iterations: itt
         });
     }
+
     //Возвращает окончательную энтропию
     fn create_entropy(&mut self) {
         self.entropy = (0..256)
@@ -48,6 +49,7 @@ impl SeedPhrase {
             self.entropy.push(bit.to_digit(2).unwrap() as u8);
         }
     }
+
     //Возвращает мнемоническую фразу
     pub fn mnemonic(&mut self) -> Vec<String> {
         let mut mnemonic: Vec<String> = Vec::new();
@@ -71,6 +73,7 @@ impl SeedPhrase {
 
         return mnemonic;
     }
+
     //Сид фраза
     fn seed(&mut self) -> Vec<u8> {
         let mut buffer: Vec<u8> = vec![0; 32];
@@ -87,7 +90,8 @@ impl SeedPhrase {
 
         return buffer;
     }
-    //Получение пары ключей(0-Приватный 1-Публичный)
+
+    //Получение приватного ключа
     pub fn get_private_key(&mut self) -> [u8; 32] {
         let seed = self.seed();
 

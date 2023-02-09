@@ -7,9 +7,13 @@ fn main() {
     ).unwrap();
 
     let mut seed_phrase = seed_phrase::SeedPhrase::new(4096).unwrap();
-    let result = toncli.deploy_contract(&seed_phrase.get_private_key());
+    let private_key = seed_phrase.get_private_key();
+    let result = toncli.deploy_contract(&private_key);
     
     println!("{}", result.result);
     println!("{}", result.data);
     println!("{}", result.message);
+
+    let contract_address = toncli.get_contract_address(&private_key);
+    println!("{contract_address}");
 }

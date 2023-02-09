@@ -1,67 +1,88 @@
-use std::{process::{Command, Output}, io::{Error, Write}, 
-    str::from_utf8, fs::{File, read_to_string, remove_file}};
+use std::{process::{Command, Child}, io::Error,
+    str::from_utf8, fs::{write, read_to_string, remove_file}, env::current_dir};
 
 pub struct ToncliRust {
-    target_os: OStypes,
-    command_fail_msg: String
+    target_os: OStypes
 }
 
 impl ToncliRust {
     //Создание экземпляра структуры
     pub fn new(target_os: OStypes) -> Result<ToncliRust, Error> {
         return Ok(ToncliRust { 
-            target_os,
-            command_fail_msg: "Ошибка выполнения команды".to_string()
+            target_os
          });
     }
+
+    //Формирование пути до файла в зависимости от ОС
+    fn build_path(&self, parts: Vec<&str>) -> String {
+        return parts.join(if let OStypes::Windows = self.target_os { "\\" } else { "/" });
+    }
+
     //Формирование команды и её исполнение
-    fn execute_command(&self, request: RequestTypes) -> Output {
+    fn execute_command(&self, request: RequestTypes) -> Child {
+        let cwd = current_dir().unwrap().to_string_lossy().to_string();
+
         let executor = if let OStypes::Windows = self.target_os { "cmd" } else { "sh" };
+        let flag = if let OStypes::Windows = self.target_os { "/K " } else { "" };
         let args = match request {
             RequestTypes::DeployContract => vec![
-                // "/K lite-client -C global.config.json"
+                format!("{}lite-client --timeout 10 -C global.config.json -c 'sendfile {}'",
+                flag, self.build_path(vec![&cwd, "src", "wallet", "build", "boc", "contract.boc"]))
             ],
             RequestTypes::GenerateContractAddress => vec![
-                "/K cd wallet",
-                "func -o build\\contract.fif -SPA func\\stdlib.fc func\\code.func",
-                "fift -s fift\\data_proxy.fif",
-                "fift -s fift\\manipulation.fif build\\contract.fif build\\boc\\data.boc 0 build\\boc\\contract.boc build\\contract_address"
+                format!("{}cd {}", flag, self.build_path(vec!["src", "wallet"])),
+                format!("func -o {} -SPA {} {}", 
+                    self.build_path(vec!["build", "contract.fif"]), 
+                    self.build_path(vec!["func", "stdlib.fc"]), 
+                    self.build_path(vec!["func", "code.func"])
+                ),
+                format!("fift -s {}", self.build_path(vec!["fift", "data_proxy.fif"])),
+                format!("fift -s {} {} {} 0 {} {}", 
+                    self.build_path(vec!["fift", "manipulation.fif"]),
+                    self.build_path(vec!["build", "contract.fif"]), 
+                    self.build_path(vec!["build", "boc", "data.boc"]),
+                    self.build_path(vec!["build", "boc", "contract.boc"]), 
+                    self.build_path(vec!["build", "contract_address"])
+                )
             ]
         };
 
         return Command::new(executor)
                 .args(args.join(" && ").split(" "))
-                .output()
-                .expect(&self.command_fail_msg);
+                .spawn()
+                .expect("Ошибка выполнения команды");
     }
-    //Запись приватного ключа в файл
-    fn save_key(&self, private_key: &[u8; 32]) {
-        let file_name = "wallet\\build\\contract.pk";
-        let mut file = File::create(file_name).unwrap();
 
-        file.write_all(private_key).ok(); 
+    //Запись приватного ключа в файл
+    fn save_key(&self, private_key: &[u8; 32]) { 
+        let path = self.build_path(vec!["src", "wallet", "build", "contract.pk"]);
+        write(path, *private_key).ok();
     }
+
     //Очищает все созданные сервисом файлы
     fn remove_builds(&self) {
         let files = vec![
-            "wallet\\build\\boc\\data.boc",
-            "wallet\\build\\boc\\contract.boc",
-            "wallet\\build\\contract_address",
-            "wallet\\build\\contract.addr",
-            "wallet\\build\\contract.fif",
-            "wallet\\build\\contract.pk"
+            self.build_path(vec!["boc", "data.boc"]),
+            self.build_path(vec!["boc", "contract.boc"]),
+            self.build_path(vec!["contract.fif"]),
+            self.build_path(vec!["contract_address"]),
+            self.build_path(vec!["contract.addr"]),
+            self.build_path(vec!["contract.pk"]),
         ];
         
         for file in files {
-            remove_file(file).ok();
+            remove_file(self.build_path(vec!["src", "wallet", "build", &file])).ok();
         }
     }
+
     //Получение адреса контракта
     pub fn get_contract_address(&self, private_key: &[u8; 32]) -> String {
         self.save_key(private_key);
 
+        let path = self.build_path(vec!["src", "wallet", "build", "contract_address"]);
+
         let mut items_counter = -1;
-        let address_data = read_to_string("wallet\\build\\contract_address").unwrap();
+        let address_data = read_to_string(path).unwrap();
         let contract_address = address_data
             .split(" ")
             .find(|_| {
@@ -73,11 +94,15 @@ impl ToncliRust {
 
         return contract_address.unwrap_or_else(|| "").to_string();
     }
+
     //Деплой контракта
     pub fn deploy_contract(&self, private_key: &[u8; 32]) -> ExecutionResult {
         self.save_key(private_key);
+
         self.execute_command(RequestTypes::GenerateContractAddress);
-        let output = self.execute_command(RequestTypes::DeployContract);
+        let output = self.execute_command(RequestTypes::DeployContract)
+            .wait_with_output()
+            .unwrap();
 
         self.remove_builds();
 
@@ -101,7 +126,7 @@ impl ToncliRust {
 //Здесь будем перечислять все необходимые ОС для гибкой настройки Command
 pub enum OStypes {
     Windows,
-    Linux
+    Unix
 }
 
 //Здесь будем перечислять всевозможные действия с блокчейном
