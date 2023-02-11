@@ -119,6 +119,8 @@ impl ToncliRust {
         let path = self.build_path(
             vec!["src", "wallet", "build", "contract.pk"], false);
         write(path, *private_key).ok();
+
+        self.execute_command(RequestTypes::GenerateContractAddress);
     }
 
     //Очищает все созданные сервисом файлы
@@ -166,7 +168,6 @@ impl ToncliRust {
 
     //Отправка тонов через деплой кошелек
     pub fn send_tons_to_wallet(&self, args: &SendTonsArgs) -> ExecutionResult {
-        self.execute_command(RequestTypes::GenerateContractAddress);
         let output = self.execute_command_with_args(
             RequestArgsTypes::SendTonsToContract, args);
 

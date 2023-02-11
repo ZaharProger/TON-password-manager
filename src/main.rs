@@ -4,7 +4,7 @@ pub mod entities;
 pub mod constants;
 
 use std::time::Duration;
-use async_std::task::{spawn, sleep};
+use std::thread::{spawn, sleep};
 
 fn main() {
     let toncli = toncli_rust::ToncliRust::new(
@@ -21,12 +21,12 @@ fn main() {
     toncli.send_tons_to_wallet(&entities::SendTonsArgs {
         address: non_bounceable_address,
         subwallet_id: 0,
-        seqno: 9,
+        seqno: 11,
         tons_amount: 0.05
     });
 
-    spawn(async move {
-        sleep(Duration::from_secs(10)).await;
+    spawn(move || {
+        sleep(Duration::from_secs(10));
         
         let result = toncli.deploy_contract();
         
@@ -35,5 +35,5 @@ fn main() {
         println!("{}", result.message);
 
         toncli.finish();
-    });
+    }).join().unwrap();
 }
