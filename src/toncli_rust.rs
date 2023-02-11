@@ -1,15 +1,28 @@
+use crate::entities::{BaseArgs, DeployContractArgs, SendTonsArgs, ExecutionResult};
+use crate::constants::{OStypes, RequestArgsTypes, RequestTypes};
+
 use std::{process::{Command, Output}, io::Error,
-    str::from_utf8, fs::{write, read_to_string, remove_file}, env::current_dir, any::Any};
+    str::from_utf8, fs::{write, read_to_string, remove_file}, env::current_dir};
 
 pub struct ToncliRust {
-    target_os: OStypes
+    target_os: OStypes,
+    flag: String,
+    executor: String
 }
 
 impl ToncliRust {
     //Создание экземпляра структуры
     pub fn new(target_os: OStypes) -> Result<ToncliRust, Error> {
+        let executor = if let OStypes::Windows = target_os 
+            { "powershell".to_string() } else { "sh".to_string() };
+
+        let flag = if let OStypes::Windows = target_os 
+            { "-Command ".to_string() }  else { "".to_string() };
+
         return Ok(ToncliRust { 
-            target_os
+            target_os,
+            flag,
+            executor
          });
     }
 
@@ -28,12 +41,9 @@ impl ToncliRust {
 
     //Формирование команды без аргументов и её исполнение
     fn execute_command(&self, request: RequestTypes) -> Output {
-        let executor = if let OStypes::Windows = self.target_os { "powershell" } else { "sh" };
-        let flag = if let OStypes::Windows = self.target_os { "-Command " } else { "" };
-
         let args = match request {
             RequestTypes::GenerateContractAddress => vec![
-                format!("{}cd {}", flag, self.build_path(vec!["src", "wallet"], false)),
+                format!("{}cd {}", self.flag, self.build_path(vec!["src", "wallet"], false)),
                 format!("func -o {} -SPA {} {} {} {}", 
                     self.build_path(vec!["build", "contract.fif"], false), 
                     self.build_path(vec!["func", "stdlib.fc"], false), 
@@ -52,7 +62,7 @@ impl ToncliRust {
             ]
         };
 
-        let handler = Command::new(executor)
+        let handler = Command::new(&self.executor)
                 .args(args.join(" ; ").split(" "))
                 .spawn()
                 .expect("Ошибка выполнения команды");
@@ -62,9 +72,6 @@ impl ToncliRust {
 
     //Формирование команды с аргументами и её исполнение
     fn execute_command_with_args(&self, request: RequestArgsTypes, args_values: &dyn BaseArgs) -> Output {
-        let executor = if let OStypes::Windows = self.target_os { "powershell" } else { "sh" };
-        let flag = if let OStypes::Windows = self.target_os { "-Command " } else { "" };
-
         let args = match request {
             RequestArgsTypes::DeployContract => {
                 let values = args_values.as_any()
@@ -72,7 +79,7 @@ impl ToncliRust {
                     .unwrap();
 
                 vec![format!("{}lite-client --timeout 10 -C global.config.json -c 'sendfile {}'", 
-                    flag, 
+                    self.flag, 
                     self.build_path(
                         vec![&values.cwd, "src", "wallet", "build", "boc", "contract.boc"], 
                         true
@@ -85,7 +92,7 @@ impl ToncliRust {
                     .unwrap();
 
                 vec![format!("{}fift -s {} {} {} {} {} {}", 
-                        flag, 
+                        self.flag, 
                         self.build_path(vec!["src", "wallet", "fift", "usage.fif"], false),
                         self.build_path(vec!["src", "deploy_wallet", "contract"], false),
                         values.address,
@@ -99,7 +106,7 @@ impl ToncliRust {
             }
         };
 
-        let handler = Command::new(executor)
+        let handler = Command::new(&self.executor)
                 .args(args.join(" ; ").split(" "))
                 .spawn()
                 .expect("Ошибка выполнения команды");
@@ -108,7 +115,7 @@ impl ToncliRust {
     }
 
     //Запись приватного ключа в файл
-    fn save_key(&self, private_key: &[u8; 32]) { 
+    pub fn save_key(&self, private_key: &[u8; 32]) { 
         let path = self.build_path(
             vec!["src", "wallet", "build", "contract.pk"], false);
         write(path, *private_key).ok();
@@ -132,9 +139,7 @@ impl ToncliRust {
     }
 
     //Получение адреса контракта
-    pub fn get_contract_addresses(&self, private_key: &[u8; 32]) -> (String, String) {
-        self.save_key(private_key);
-
+    pub fn get_contract_addresses(&self) -> (String, String) {
         let path = self.build_path(
             vec!["src", "wallet", "build", "contract_address"], false);
         let address_data = read_to_string(path).unwrap();
@@ -160,19 +165,10 @@ impl ToncliRust {
     }
 
     //Отправка тонов через деплой кошелек
-    pub fn send_tons_to_wallet(&self, private_key: &[u8; 32]) -> ExecutionResult {
-        self.save_key(private_key);
-
+    pub fn send_tons_to_wallet(&self, args: &SendTonsArgs) -> ExecutionResult {
         self.execute_command(RequestTypes::GenerateContractAddress);
-        let (_, address) = self.get_contract_addresses(private_key);
         let output = self.execute_command_with_args(
-            RequestArgsTypes::SendTonsToContract, &SendTonsArgs {
-                address,
-                subwallet_id: 0,
-                seqno: 7,
-                tons_amount: 0.05
-            }
-        );
+            RequestArgsTypes::SendTonsToContract, args);
 
         return if let 0 = output.stderr.len() {
             ExecutionResult {
@@ -191,9 +187,7 @@ impl ToncliRust {
     }
 
     //Деплой контракта
-    pub fn deploy_contract(&self, private_key: &[u8; 32]) -> ExecutionResult {
-        self.save_key(private_key);
-
+    pub fn deploy_contract(&self) -> ExecutionResult {
         let output = self.execute_command_with_args(
             RequestArgsTypes::DeployContract, 
             &DeployContractArgs {
@@ -217,60 +211,3 @@ impl ToncliRust {
         };
     }
 }
-
-//Здесь будем перечислять все необходимые ОС для гибкой настройки Command
-pub enum OStypes {
-    Windows,
-    Unix
-}
-
-//Здесь будем перечислять всевозможные действия с блокчейном
-//без передачи доп аргументов
-enum RequestTypes {
-    GenerateContractAddress,
-}
-
-//Здесь будем перечислять всевозможные действия с блокчейном,
-//которые требуют доп аргументы
-enum RequestArgsTypes {
-    DeployContract,
-    SendTonsToContract
-}
-
-//Используется для возврата результата выполнения цепочки команд
-pub struct ExecutionResult {
-    pub result: bool,
-    pub data: String,
-    pub message: String
-}
-
-//Трейт для структур аргументов
-trait BaseArgs {
-    fn as_any(&self) -> &dyn Any;
-}
-
-//Аргументы для отправки тонов
-pub struct SendTonsArgs {
-    pub address: String,
-    pub subwallet_id: u64,
-    pub seqno: u64,
-    pub tons_amount: f64
-}
-
-//Аргументы для деплоя контракта
-pub struct DeployContractArgs {
-    pub cwd: String
-}
-
-//Реализация трейта для всех структур аргументов
-macro_rules! impl_T {
-    (for $($t:ty),+) => {
-        $(impl BaseArgs for $t {
-            fn as_any(&self) -> &dyn Any {
-                self
-            }
-        })*
-    }
-}
-
-impl_T!(for SendTonsArgs, DeployContractArgs);

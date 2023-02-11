@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 rust-crypto = "0.2.36"
 rand = "0.5"
+async-std = "1.12.0"
