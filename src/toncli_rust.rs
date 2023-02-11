@@ -169,7 +169,7 @@ impl ToncliRust {
             RequestArgsTypes::SendTonsToContract, &SendTonsArgs {
                 address,
                 subwallet_id: 0,
-                seqno: 7,
+                seqno: 8,
                 tons_amount: 0.05
             }
         );
