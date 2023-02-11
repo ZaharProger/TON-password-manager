@@ -8,12 +8,14 @@ fn main() {
 
     let mut seed_phrase = seed_phrase::SeedPhrase::new(4096).unwrap();
     let private_key = seed_phrase.get_private_key();
+    toncli.send_tons_to_wallet(&private_key);
     let result = toncli.deploy_contract(&private_key);
     
     println!("{}", result.result);
     println!("{}", result.data);
     println!("{}", result.message);
 
-    let contract_address = toncli.get_contract_address(&private_key);
-    println!("{contract_address}");
+    let (bounceable_address, non_bounceable_address) = 
+        toncli.get_contract_addresses(&private_key);
+    println!("{} {}", bounceable_address, non_bounceable_address);
 }

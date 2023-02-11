@@ -46,6 +46,7 @@ $3 parse-int =: subwallet_id
 $4 parse-int =: seqno
 $5 $>cc extra-cc+! extra-currencies @ 2=: amount
 $6 "wallet-query" replace-if-null =: savefile
+"src/wallet/build/boc/usage.boc" constant saveboc
 subwallet_id (.) 1 ' $+ does : +subwallet
 
 file-base +subwallet +".addr" dup file-exists? { drop file-base +".addr" } ifnot
@@ -75,5 +76,5 @@ dup hashu wallet_pk ed25519_sign_uint
 
 2 boc+>B
 
-saveboc // it is defined in build/cli.fif (or /tmp if in script mode)
+saveboc tuck B>file // it is defined in build/cli.fif (or /tmp if in script mode)
 // it is project-specific lib from tlcli thats specify needed locations
