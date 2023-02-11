@@ -30,7 +30,7 @@ impl ToncliRust {
     fn execute_command(&self, request: RequestTypes) -> Output {
         let cwd = current_dir().unwrap().to_string_lossy().to_string();
 
-        let executor = if let OStypes::Windows = self.target_os { "pwsh" } else { "sh" };
+        let executor = if let OStypes::Windows = self.target_os { "powershell" } else { "sh" };
         let flag = if let OStypes::Windows = self.target_os { "-Command " } else { "" };
         let args = match request {
             RequestTypes::DeployContract => vec![
@@ -39,9 +39,11 @@ impl ToncliRust {
             ],
             RequestTypes::GenerateContractAddress => vec![
                 format!("{}cd {}", flag, self.build_path(vec!["src", "wallet"], false)),
-                format!("func -o {} -SPA {} {}", 
+                format!("func -o {} -SPA {} {} {} {}", 
                     self.build_path(vec!["build", "contract.fif"], false), 
                     self.build_path(vec!["func", "stdlib.fc"], false), 
+                    self.build_path(vec!["func", "error_codes.func"], false), 
+                    self.build_path(vec!["func", "math.func"], false), 
                     self.build_path(vec!["func", "code.func"], false)
                 ),
                 format!("fift -s {}", self.build_path(vec!["fift", "data_proxy.fif"], false)),
@@ -56,7 +58,7 @@ impl ToncliRust {
         };
 
         let handler = Command::new(executor)
-                .args(args.join(" && ").split(" "))
+                .args(args.join(" ; ").split(" "))
                 .spawn()
                 .expect("Ошибка выполнения команды");
         
