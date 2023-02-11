@@ -76,5 +76,10 @@ dup hashu wallet_pk ed25519_sign_uint
 
 2 boc+>B
 
+<<<<<<< HEAD
 saveboc tuck B>file // it is defined in build/cli.fif (or /tmp if in script mode)
+=======
+saveboc tuck B>file
+// it is defined in build/cli.fif (or /tmp if in script mode)
+>>>>>>> 2ff0860ae1783408bc28b159e2abe964f9f62157
 // it is project-specific lib from tlcli thats specify needed locations
